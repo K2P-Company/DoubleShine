@@ -80,3 +80,7 @@ Przygotowanie kontenera, bazy i zmiennych opisuje [WDROZENIE_DEMO.md](WDROZENIE_
 ## Aktualne zasady rezerwacji
 
 Publiczny kalendarz służy wyłącznie do podglądu. Tworzenie rezerwacji wymaga konta personelu z uprawnieniem add_booking, także przy bezpośrednim wejściu na adres formularza lub wysłaniu POST. Publiczna rejestracja jest wyłączona (GET i POST zwracają 403). Wcześniejsze opisy samodzielnych zapisów klientów powyżej są nieaktualne. Klient kontaktuje się ze studiem, a administrator wprowadza wizytę. Istniejące konta zachowują podgląd i anulowanie własnych wizyt.
+
+## Wyświetlanie godzin dostępności
+
+Wielodniowe wolne przedziały w kalendarzu są przycinane do grafiku: pon.–pt. 10:00–18:00, sobota 10:00–14:00; niedziele pomijane. Jednodniowy termin ustawiony przez administratora jest wyjątkiem i zachowuje dokładne godziny. Zajęte rezerwacje zawsze pokazują rzeczywisty zapisany zakres. To sposób prezentacji dostępności, a nie podział przedziału na niezależne terminy: rezerwacja nadal zajmuje cały rekord terminu.

@@ -46,6 +46,20 @@ def calendar(request):
             if day_start >= slot.end:
                 break
             segment_start, segment_end = max(local_start, day_start), min(local_end, day_end)
+            # Wielodniowa dostępność obejmuje godziny pracy.
+            # Jednodniowy termin to jawny wybór godzin przez administratora.
+            spans_days = (local_end - timedelta(microseconds=1)).date() != local_start.date()
+            if not slot.taken and spans_days:
+                hours = {0: (10, 18), 1: (10, 18), 2: (10, 18), 3: (10, 18), 4: (10, 18), 5: (10, 14)}.get(day.weekday())
+                if hours is None:
+                    day = next_day
+                    continue
+                opening = timezone.make_aware(datetime.combine(day, time(hours[0])))
+                closing = timezone.make_aware(datetime.combine(day, time(hours[1])))
+                segment_start, segment_end = max(segment_start, opening), min(segment_end, closing)
+                if segment_start >= segment_end:
+                    day = next_day
+                    continue
             end_label = '24:00' if segment_end == day_end else segment_end.strftime('%H:%M')
             label = f'{segment_start:%H:%M} – {end_label}'
             status = 'Zarezerwowany' if slot.taken else 'Wolny'
@@ -55,7 +69,7 @@ def calendar(request):
     weeks = []
     for week in month_calendar.Calendar(firstweekday=0).monthdatescalendar(month.year, month.month):
         weeks.append([{'date': day, 'in_month': day.month == month.month, 'slots': by_day.get(day, []) if day.month == month.month else [], 'has_free_slots': any(not entry['slot'].taken for entry in by_day.get(day, [])), 'has_bookings': any(entry['slot'].taken for entry in by_day.get(day, []))} for day in week])
-    return render(request, 'dshine/calendar.html', {'weeks': weeks, 'month': month, 'previous': previous, 'following': following, 'has_slots': any(not slot.taken for slot in slots), 'calendar_staff': staff, 'can_book': request.user.is_staff and request.user.has_perm('dshine_app.add_booking')})
+    return render(request, 'dshine/calendar.html', {'weeks': weeks, 'month': month, 'previous': previous, 'following': following, 'has_slots': any(not entry['slot'].taken for entries in by_day.values() for entry in entries), 'calendar_staff': staff, 'can_book': request.user.is_staff and request.user.has_perm('dshine_app.add_booking')})
 
 
 @login_required
