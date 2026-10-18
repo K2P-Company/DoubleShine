@@ -76,3 +76,7 @@ Po publikacji sprawdź publiczną stronę narzędziem kontroli adresu URL w Goog
 ## Demo na hostingu
 
 Przygotowanie kontenera, bazy i zmiennych opisuje [WDROZENIE_DEMO.md](WDROZENIE_DEMO.md). Tryb `DJANGO_DEMO_MODE=true` wyświetla komunikat o testowych rezerwacjach i wyłącza indeksowanie. Nie zastępuje ochrony przed nadużyciami ani zasad przetwarzania danych.
+
+## Aktualne zasady rezerwacji
+
+Publiczny kalendarz służy wyłącznie do podglądu. Tworzenie rezerwacji wymaga konta personelu z uprawnieniem add_booking, także przy bezpośrednim wejściu na adres formularza lub wysłaniu POST. Publiczna rejestracja jest wyłączona (GET i POST zwracają 403). Wcześniejsze opisy samodzielnych zapisów klientów powyżej są nieaktualne. Klient kontaktuje się ze studiem, a administrator wprowadza wizytę. Istniejące konta zachowują podgląd i anulowanie własnych wizyt.

@@ -1,4 +1,4 @@
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import redirect, render
@@ -56,14 +56,17 @@ def calendar(request):
     weeks = []
     for week in month_calendar.Calendar(firstweekday=0).monthdatescalendar(month.year, month.month):
         weeks.append([{'date': day, 'in_month': day.month == month.month, 'slots': by_day.get(day, []) if day.month == month.month else [], 'has_bookings': any(entry['slot'].taken for entry in by_day.get(day, []))} for day in week])
-    return render(request, 'dshine/calendar.html', {'weeks': weeks, 'month': month, 'previous': previous, 'following': following, 'has_slots': any(not slot.taken for slot in slots), 'calendar_staff': staff})
+    return render(request, 'dshine/calendar.html', {'weeks': weeks, 'month': month, 'previous': previous, 'following': following, 'has_slots': any(not slot.taken for slot in slots), 'calendar_staff': staff, 'can_book': request.user.is_staff and request.user.has_perm('dshine_app.add_booking')})
 
 
 @login_required
 def book(request, slot_id):
+    # Samo zalogowanie nie uprawnia do rezerwacji.
+    if not request.user.is_staff or not request.user.has_perm('dshine_app.add_booking'):
+        raise PermissionDenied
     slot = get_object_or_404(AppointmentSlot, pk=slot_id)
     staff_booking = request.user.is_staff and request.user.has_perm('dshine_app.add_booking')
-    form_class = StaffBookingForm if staff_booking else BookingForm
+    form_class = StaffBookingForm
     form = form_class(request.POST if request.method == 'POST' else None, initial={'name': '' if staff_booking else request.user.get_full_name()})
     unavailable = not slot.available or slot.start <= timezone.now() or Booking.objects.filter(slot=slot, status='confirmed').exists()
     if request.method == 'POST' and form.is_valid():
@@ -152,17 +155,5 @@ def home(request):
 
 
 def rejestracja(request):
-    if request.user.is_authenticated:
-        return redirect('home')
-    form = UserCreationForm(request.POST or None)
-    next_url = request.POST.get('next', request.GET.get('next', ''))
-    if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
-        next_url = ''
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        messages.success(request, 'Konto zostało utworzone. Możesz się zalogować.')
-        if next_url:
-            from django.urls import reverse
-            return redirect(reverse('login') + '?' + urlencode({'next': next_url}))
-        return redirect('login')
-    return render(request, 'registration/register.html', {'form': form, 'next': next_url})
+    # Konta zakłada wyłącznie administrator, także dla bezpośrednich żądań POST.
+    raise PermissionDenied('Publiczna rejestracja jest wyłączona. Termin ustal przez kontakt ze studiem.')
