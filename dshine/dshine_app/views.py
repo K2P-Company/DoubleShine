@@ -38,9 +38,6 @@ def calendar(request):
     by_day = {}
     for slot in slots:
         local_start, local_end = timezone.localtime(slot.start), timezone.localtime(slot.end)
-        if not slot.taken:
-            by_day.setdefault(local_start.date(), []).append({'slot': slot})
-            continue
         day = max(local_start.date(), month)
         while day < following:
             day_start = timezone.make_aware(datetime.combine(day, time.min))
@@ -51,11 +48,13 @@ def calendar(request):
             segment_start, segment_end = max(local_start, day_start), min(local_end, day_end)
             end_label = '24:00' if segment_end == day_end else segment_end.strftime('%H:%M')
             label = f'{segment_start:%H:%M} – {end_label}'
-            by_day.setdefault(day, []).append({'slot': slot, 'time_label': label, 'description': 'Zarezerwowany · cały dzień' if segment_start == day_start and segment_end == day_end else 'Zarezerwowany'})
+            status = 'Zarezerwowany' if slot.taken else 'Wolny'
+            description = status + (' · cały dzień' if segment_start == day_start and segment_end == day_end else '')
+            by_day.setdefault(day, []).append({'slot': slot, 'time_label': label, 'description': description})
             day = next_day
     weeks = []
     for week in month_calendar.Calendar(firstweekday=0).monthdatescalendar(month.year, month.month):
-        weeks.append([{'date': day, 'in_month': day.month == month.month, 'slots': by_day.get(day, []) if day.month == month.month else [], 'has_bookings': any(entry['slot'].taken for entry in by_day.get(day, []))} for day in week])
+        weeks.append([{'date': day, 'in_month': day.month == month.month, 'slots': by_day.get(day, []) if day.month == month.month else [], 'has_free_slots': any(not entry['slot'].taken for entry in by_day.get(day, [])), 'has_bookings': any(entry['slot'].taken for entry in by_day.get(day, []))} for day in week])
     return render(request, 'dshine/calendar.html', {'weeks': weeks, 'month': month, 'previous': previous, 'following': following, 'has_slots': any(not slot.taken for slot in slots), 'calendar_staff': staff, 'can_book': request.user.is_staff and request.user.has_perm('dshine_app.add_booking')})
 
 
