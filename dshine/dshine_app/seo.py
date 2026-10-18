@@ -7,6 +7,7 @@ def seo_context(request):
     public_home = request.path == '/'
     indexable = settings.SITE_INDEXING_ENABLED and public_home
     return {
+        'demo_mode': settings.DEMO_MODE,
         'seo_robots': 'index, follow' if indexable else 'noindex, follow',
         'seo_canonical': settings.SITE_URL + '/' if public_home and settings.SITE_URL else '',
     }

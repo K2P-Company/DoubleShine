@@ -72,3 +72,7 @@ Zastąp przykład rzeczywistą domeną. Ustaw też klucz, ALLOWED_HOSTS, zaufane
 Przy DEBUG=true, braku domeny lub INDEXING_ENABLED=false wersja pozostaje zablokowana. Staging powinien mieć INDEXING_ENABLED=false i dodatkowe ograniczenie dostępu, gdy zawiera prywatne dane. Robots i noindex są instrukcjami dla wyszukiwarek, nie kontrolą dostępu.
 
 Po publikacji sprawdź publiczną stronę narzędziem kontroli adresu URL w Google Search Console i zgłoś mapę witryny. Zweryfikuj także przekierowania HTTP→HTTPS, www→wybrana domena oraz czy hosting/CDN nie dodaje własnego noindex ani blokad Googlebota. Indeksowanie nie gwarantuje pozycji w wynikach ani samego przyjęcia strony do indeksu.
+
+## Demo na hostingu
+
+Przygotowanie kontenera, bazy i zmiennych opisuje [WDROZENIE_DEMO.md](WDROZENIE_DEMO.md). Tryb `DJANGO_DEMO_MODE=true` wyświetla komunikat o testowych rezerwacjach i wyłącza indeksowanie. Nie zastępuje ochrony przed nadużyciami ani zasad przetwarzania danych.
