@@ -101,7 +101,7 @@ def book(request, slot_id):
             if 'locked' not in str(error).lower():
                 raise
             form.add_error(None, 'Ktoś właśnie rezerwuje termin. Spróbuj ponownie za chwilę.')
-    return render(request, 'dshine/book.html', {'slot': slot, 'form': form, 'unavailable': unavailable, 'day_off': slot.is_day_off})
+    return render(request, 'dshine/book.html', {'slot': slot, 'form': form, 'unavailable': unavailable, 'day_off': slot.is_day_off, 'day_off_end': timezone.localtime(slot.end - timedelta(microseconds=1)).date()})
 
 
 @login_required

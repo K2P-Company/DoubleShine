@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import AppointmentSlot, Booking
+from .forms import SlotForm
 
 admin.site.site_header = 'Double Shine — zarządzanie'
 admin.site.site_title = 'Panel Double Shine'
@@ -10,6 +11,11 @@ admin.site.index_title = 'Terminy, rezerwacje i konta'
 class SlotAdmin(admin.ModelAdmin):
     list_display = ['start', 'end', 'is_day_off', 'available']
     readonly_fields = ['is_day_off']
+
+    def get_form(self, request, obj=None, **kwargs):
+        if obj is None or obj.is_day_off:
+            kwargs['form'] = SlotForm
+        return super().get_form(request, obj, **kwargs)
 
     def save_model(self, request, obj, form, change):
         if not change:

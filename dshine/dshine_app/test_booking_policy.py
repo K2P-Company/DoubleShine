@@ -114,3 +114,36 @@ class BookingPolicyTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'admin-double-shine.css')
         self.assertContains(response, 'DOUBLE <span>SHINE</span>')
+
+
+    def test_single_day_off_uses_whole_local_day(self):
+        from .forms import SlotForm
+        from datetime import datetime, time
+        day = (timezone.localdate() + timedelta(days=40))
+        form = SlotForm(data={'start': day.isoformat(), 'end': day.isoformat(), 'available': True})
+        self.assertTrue(form.is_valid(), form.errors)
+        slot = form.save()
+        self.assertTrue(slot.is_day_off)
+        self.assertEqual(timezone.localtime(slot.start), timezone.make_aware(datetime.combine(day, time.min)))
+        self.assertEqual(timezone.localtime(slot.end).date(), day + timedelta(days=1))
+        self.assertEqual(timezone.localtime(slot.end).time(), time.min)
+
+    def test_day_off_end_is_inclusive_and_reverse_dates_rejected(self):
+        from .forms import SlotForm
+        day = timezone.localdate() + timedelta(days=40)
+        end = day + timedelta(days=2)
+        form = SlotForm(data={'start': day.isoformat(), 'end': end.isoformat(), 'available': True})
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(timezone.localtime(form.save().end).date(), end + timedelta(days=1))
+        invalid = SlotForm(data={'start': end.isoformat(), 'end': day.isoformat(), 'available': True})
+        self.assertFalse(invalid.is_valid())
+
+    def test_editing_day_off_preserves_inclusive_dates(self):
+        from .forms import SlotForm
+        day = timezone.localdate() + timedelta(days=40)
+        form = SlotForm(data={'start': day.isoformat(), 'end': day.isoformat(), 'available': True})
+        self.assertTrue(form.is_valid(), form.errors)
+        slot = form.save()
+        edit = SlotForm(instance=slot)
+        self.assertEqual(edit.initial['start'], day)
+        self.assertEqual(edit.initial['end'], day)

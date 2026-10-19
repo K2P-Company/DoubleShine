@@ -26,10 +26,37 @@ class StaffBookingForm(BookingForm):
 
 
 class SlotForm(forms.ModelForm):
+    start = forms.DateField(label='Od dnia', widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}))
+    end = forms.DateField(label='Do dnia (włącznie)', widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}), help_text='Dla jednego dnia wybierz tę samą datę w obu polach.')
+
     class Meta:
         model = AppointmentSlot
         fields = ['start', 'end', 'available']
-        widgets = {field: forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'}) for field in ['start', 'end']}
+
+    def __init__(self, *args, **kwargs):
+        from datetime import timedelta
+        from django.utils import timezone
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.initial['start'] = timezone.localtime(self.instance.start).date()
+            self.initial['end'] = timezone.localtime(self.instance.end - timedelta(microseconds=1)).date()
+
+    def clean_start(self):
+        from datetime import datetime, time
+        from django.utils import timezone
+        day = self.cleaned_data['start']
+        if not self.instance.pk and day < timezone.localdate():
+            raise forms.ValidationError('Wybierz dzisiejszą lub przyszłą datę.')
+        return timezone.make_aware(datetime.combine(day, time.min))
+
+    def clean_end(self):
+        from datetime import datetime, time, timedelta
+        from django.utils import timezone
+        try:
+            day_after = self.cleaned_data['end'] + timedelta(days=1)
+        except OverflowError:
+            raise forms.ValidationError('Wybierz wcześniejszą datę.')
+        return timezone.make_aware(datetime.combine(day_after, time.min))
 
     def save(self, commit=True):
         slot = super().save(commit=False)
@@ -37,13 +64,6 @@ class SlotForm(forms.ModelForm):
         if commit:
             slot.save()
         return slot
-
-    def clean_start(self):
-        from django.utils import timezone
-        start = self.cleaned_data['start']
-        if start <= timezone.now():
-            raise forms.ValidationError('Dodaj termin w przyszłości.')
-        return start
 
 
 class DirectBookingForm(StaffBookingForm):
