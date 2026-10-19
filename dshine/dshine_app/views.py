@@ -116,7 +116,8 @@ def cancel_booking(request, booking_id):
     query = Booking.objects.all() if staff else Booking.objects.filter(user=request.user)
     booking = get_object_or_404(query, pk=booking_id)
     if booking.slot.start > timezone.now():
-        Booking.objects.filter(pk=booking.pk, status='confirmed').update(status='cancelled')
+        booking.status = Booking.Status.CANCELLED
+        booking.save(update_fields=['status'])
         messages.success(request, 'Rezerwacja została anulowana.')
     else:
         messages.error(request, 'Termin już się rozpoczął. W sprawie zmian skontaktuj się z nami telefonicznie.')

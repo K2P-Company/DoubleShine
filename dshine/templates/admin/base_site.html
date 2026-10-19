@@ -1,0 +1,5 @@
+{% extends "admin/base.html" %}{% load static %}
+{% block title %}{{ title }} | Double Shine{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-double-shine.css' %}">{% endblock %}
+{% block branding %}<a class="ds-admin-brand" href="{% url 'admin:index' %}">DOUBLE <span>SHINE</span><small>PANEL ADMINISTRATORA</small></a>{% endblock %}
+{% block nav-global %}<a class="ds-calendar-link" href="{% url 'staff_bookings' %}">Zarządzanie wizytami ↗</a>{% endblock %}

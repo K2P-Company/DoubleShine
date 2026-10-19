@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils import timezone
@@ -60,3 +60,16 @@ class Booking(models.Model):
                 raise ValidationError('Nie można rezerwować wyłączonego lub przeszłego terminu.')
             if Booking.objects.filter(slot_id=self.slot_id, status='confirmed').exclude(pk=self.pk).exists():
                 raise ValidationError('Ten termin ma już potwierdzoną rezerwację.')
+
+
+    def save(self, *args, **kwargs):
+        if self.pk and self.status == self.Status.CANCELLED:
+            # Ten sam skutek w panelu Django i na stronie klienta.
+            with transaction.atomic():
+                AppointmentSlot.objects.select_for_update().get(pk=self.slot_id)
+                previous = type(self).objects.filter(pk=self.pk).values_list('status', flat=True).first()
+                result = super().save(*args, **kwargs)
+                if previous == self.Status.CONFIRMED and not type(self).objects.filter(slot_id=self.slot_id, status=self.Status.CONFIRMED).exists():
+                    AppointmentSlot.objects.filter(pk=self.slot_id).update(available=False)
+                return result
+        return super().save(*args, **kwargs)
