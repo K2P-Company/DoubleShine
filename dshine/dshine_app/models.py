@@ -7,7 +7,8 @@ from django.utils import timezone
 class AppointmentSlot(models.Model):
     start = models.DateTimeField('Początek')
     end = models.DateTimeField('Koniec')
-    available = models.BooleanField('Udostępniony klientom', default=True)
+    available = models.BooleanField('Aktywny wpis w kalendarzu', default=True)
+    is_day_off = models.BooleanField('Dzień wolny od pracy', default=False)
 
     class Meta:
         ordering = ['start']
@@ -19,7 +20,7 @@ class AppointmentSlot(models.Model):
         if self.start and self.end:
             if self.end <= self.start:
                 raise ValidationError('Koniec musi być późniejszy niż początek.')
-            if AppointmentSlot.objects.exclude(pk=self.pk).filter(start__lt=self.end, end__gt=self.start).exists():
+            if AppointmentSlot.objects.exclude(pk=self.pk).filter(start__lt=self.end, end__gt=self.start).filter(models.Q(available=True) | models.Q(booking__status='confirmed')).exists():
                 raise ValidationError('Termin nakłada się na inny termin. W tej wersji obsługujemy jedno auto jednocześnie.')
             if self.pk and Booking.objects.filter(slot=self, status='confirmed').exists():
                 old = AppointmentSlot.objects.get(pk=self.pk)
@@ -56,7 +57,7 @@ class Booking(models.Model):
 
     def clean(self):
         if self.slot_id and self.status == self.Status.CONFIRMED:
-            if not self.slot.available or self.slot.start <= timezone.now():
+            if self.slot.is_day_off or not self.slot.available or self.slot.start <= timezone.now():
                 raise ValidationError('Nie można rezerwować wyłączonego lub przeszłego terminu.')
             if Booking.objects.filter(slot_id=self.slot_id, status='confirmed').exclude(pk=self.pk).exists():
                 raise ValidationError('Ten termin ma już potwierdzoną rezerwację.')

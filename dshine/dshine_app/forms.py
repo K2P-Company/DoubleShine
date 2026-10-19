@@ -31,6 +31,13 @@ class SlotForm(forms.ModelForm):
         fields = ['start', 'end', 'available']
         widgets = {field: forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'}) for field in ['start', 'end']}
 
+    def save(self, commit=True):
+        slot = super().save(commit=False)
+        slot.is_day_off = True
+        if commit:
+            slot.save()
+        return slot
+
     def clean_start(self):
         from django.utils import timezone
         start = self.cleaned_data['start']
@@ -56,7 +63,7 @@ class DirectBookingForm(StaffBookingForm):
             else:
                 slot = AppointmentSlot.objects.filter(start=start, end=end).first()
                 if slot:
-                    if not slot.available or Booking.objects.filter(slot=slot, status='confirmed').exists():
+                    if slot.is_day_off or not slot.available or Booking.objects.filter(slot=slot, status='confirmed').exists():
                         raise forms.ValidationError('Ten termin jest niedostępny lub już zarezerwowany.')
                 else:
                     try:

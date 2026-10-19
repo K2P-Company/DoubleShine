@@ -8,7 +8,13 @@ admin.site.index_title = 'Terminy, rezerwacje i konta'
 
 @admin.register(AppointmentSlot)
 class SlotAdmin(admin.ModelAdmin):
-    list_display = ['start', 'end', 'available']
+    list_display = ['start', 'end', 'is_day_off', 'available']
+    readonly_fields = ['is_day_off']
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.is_day_off = True
+        super().save_model(request, obj, form, change)
     list_filter = ['available', 'start']
     date_hierarchy = 'start'
     list_per_page = 25
@@ -30,7 +36,7 @@ class BookingAdmin(admin.ModelAdmin):
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'slot':
             from django.utils import timezone
-            kwargs['queryset'] = AppointmentSlot.objects.filter(available=True, start__gt=timezone.now()).exclude(booking__status='confirmed')
+            kwargs['queryset'] = AppointmentSlot.objects.filter(available=True, is_day_off=False, start__gt=timezone.now()).exclude(booking__status='confirmed')
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def has_delete_permission(self, request, obj=None):

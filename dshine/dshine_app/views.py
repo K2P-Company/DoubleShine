@@ -49,7 +49,7 @@ def calendar(request):
             # Wielodniowa dostępność obejmuje godziny pracy.
             # Jednodniowy termin to jawny wybór godzin przez administratora.
             spans_days = (local_end - timedelta(microseconds=1)).date() != local_start.date()
-            if not slot.taken and spans_days:
+            if not slot.taken and not slot.is_day_off and spans_days:
                 hours = {0: (10, 18), 1: (10, 18), 2: (10, 18), 3: (10, 18), 4: (10, 18), 5: (10, 14)}.get(day.weekday())
                 if hours is None:
                     day = next_day
@@ -62,7 +62,7 @@ def calendar(request):
                     continue
             end_label = '24:00' if segment_end == day_end else segment_end.strftime('%H:%M')
             label = f'{segment_start:%H:%M} – {end_label}'
-            status = 'Zarezerwowany' if slot.taken else 'Wolny'
+            status = 'Zarezerwowany' if slot.taken else ('Nieczynne' if slot.is_day_off else 'Dostępny')
             description = status + (' · cały dzień' if segment_start == day_start and segment_end == day_end else '')
             by_day.setdefault(day, []).append({'slot': slot, 'time_label': label, 'description': description})
             day = next_day
@@ -81,12 +81,12 @@ def book(request, slot_id):
     staff_booking = request.user.is_staff and request.user.has_perm('dshine_app.add_booking')
     form_class = StaffBookingForm
     form = form_class(request.POST if request.method == 'POST' else None, initial={'name': '' if staff_booking else request.user.get_full_name()})
-    unavailable = not slot.available or slot.start <= timezone.now() or Booking.objects.filter(slot=slot, status='confirmed').exists()
+    unavailable = slot.is_day_off or not slot.available or slot.start <= timezone.now() or Booking.objects.filter(slot=slot, status='confirmed').exists()
     if request.method == 'POST' and form.is_valid():
         try:
             with transaction.atomic():
                 locked = AppointmentSlot.objects.select_for_update().get(pk=slot.pk)
-                if not locked.available or locked.start <= timezone.now() or Booking.objects.filter(slot=locked, status='confirmed').exists():
+                if locked.is_day_off or not locked.available or locked.start <= timezone.now() or Booking.objects.filter(slot=locked, status='confirmed').exists():
                     raise IntegrityError('Termin jest już niedostępny.')
                 booking = form.save(commit=False)
                 booking.user = (form.cleaned_data.get('user') or request.user) if staff_booking else request.user
@@ -101,7 +101,7 @@ def book(request, slot_id):
             if 'locked' not in str(error).lower():
                 raise
             form.add_error(None, 'Ktoś właśnie rezerwuje termin. Spróbuj ponownie za chwilę.')
-    return render(request, 'dshine/book.html', {'slot': slot, 'form': form, 'unavailable': unavailable})
+    return render(request, 'dshine/book.html', {'slot': slot, 'form': form, 'unavailable': unavailable, 'day_off': slot.is_day_off})
 
 
 @login_required
@@ -144,7 +144,7 @@ def staff_bookings(request):
                         slot = AppointmentSlot(start=start, end=end)
                         slot.full_clean()
                         slot.save()
-                    if not slot.available or Booking.objects.filter(slot=slot, status='confirmed').exists():
+                    if slot.is_day_off or not slot.available or Booking.objects.filter(slot=slot, status='confirmed').exists():
                         raise IntegrityError('Termin zajęty.')
                     booking = booking_form.save(commit=False)
                     booking.user = booking_form.cleaned_data.get('user') or request.user
@@ -171,3 +171,22 @@ def home(request):
 def rejestracja(request):
     # Konta zakłada wyłącznie administrator, także dla bezpośrednich żądań POST.
     raise PermissionDenied('Publiczna rejestracja jest wyłączona. Termin ustal przez kontakt ze studiem.')
+
+
+@login_required
+@require_POST
+def remove_day_off(request, slot_id):
+    if not request.user.is_staff or not request.user.has_perm('dshine_app.delete_appointmentslot'):
+        raise PermissionDenied
+    with transaction.atomic():
+        slot = get_object_or_404(AppointmentSlot.objects.select_for_update(), pk=slot_id, is_day_off=True)
+        if Booking.objects.filter(slot=slot, status='confirmed').exists():
+            messages.error(request, 'Ten wpis ma aktywną rezerwację i nie może być usunięty.')
+        elif Booking.objects.filter(slot=slot).exists():
+            slot.available = False
+            slot.save(update_fields=['available'])
+            messages.success(request, 'Dzień wolny usunięty z kalendarza; historia wizyt została zachowana.')
+        else:
+            slot.delete()
+            messages.success(request, 'Dzień wolny został usunięty.')
+    return redirect('calendar')

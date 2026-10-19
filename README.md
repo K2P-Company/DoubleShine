@@ -94,3 +94,7 @@ Nie dodano tabel limitów ani aktywacji; ta zmiana nie wymaga nowych migracji. K
 ## Anulowanie wizyty
 
 Anulowanie przez klienta lub zmiana statusu na Anulowana w panelu Django wycofuje termin z publicznej dostępności. Historia wizyty zostaje. Administrator otwiera go ponownie w Terminy, zaznaczając Udostępniony klientom. Wcześniej anulowane terminy nie są automatycznie zmieniane — trzeba ręcznie wyłączyć ich dostępność. Nowy wygląd panelu jest w templates/admin/base_site.html i css/admin-double-shine.css.
+
+## Dni wolne od pracy
+
+Wpis bez rezerwacji to teraz Nieczynne / dzień wolny, a nie dostępność dla klientów. Migracja 0002_day_off oznacza istniejące aktywne wpisy bez potwierdzonej rezerwacji jako dni wolne. Potwierdzone wizyty pozostają rezerwacjami. Formularz Dodaj dzień wolny blokuje podany zakres; wizyty dodaje się przez formularz rezerwacji klienta. Usunięcie wpisu dnia wolnego wymaga uprawnienia delete_appointmentslot i potwierdzenia POST. Jeśli wpis ma historyczne wizyty, jest wyłączany zamiast kasowania historii. Brak wpisu w publicznym kalendarzu nie gwarantuje dostępności. Przed wdrożeniem tej wersji wykonaj migrację na Neon; poprzednie opisy wolnych terminów powyżej są nieaktualne.
