@@ -84,3 +84,9 @@ Publiczny kalendarz służy wyłącznie do podglądu. Tworzenie rezerwacji wymag
 ## Wyświetlanie godzin dostępności
 
 Wielodniowe wolne przedziały w kalendarzu są przycinane do grafiku: pon.–pt. 10:00–18:00, sobota 10:00–14:00; niedziele pomijane. Jednodniowy termin ustawiony przez administratora jest wyjątkiem i zachowuje dokładne godziny. Zajęte rezerwacje zawsze pokazują rzeczywisty zapisany zakres. To sposób prezentacji dostępności, a nie podział przedziału na niezależne terminy: rezerwacja nadal zajmuje cały rekord terminu.
+
+## Uproszczone demo portfolio
+
+Bez publicznej rejestracji, aktywacji e-mail i integracji z dostawcą poczty. Logowanie umożliwia pokazanie istniejącego konta klienta i pracę administratora. Zwykłe konto nie może tworzyć rezerwacji. W panelu administratora utwórz aktywnego użytkownika pokazowego bez flag personelu/superadministratora i bez uprawnień. Użyj fikcyjnych danych, a hasło ustaw poza kodem. Przypisz do konta wyłącznie testową rezerwację przez pole Konto klienta. Konto pokazowe widzi własne wizyty i zachowuje funkcję anulowania swojej przyszłej wizyty. Nie udostępniaj konta administratora.
+
+Nie dodano tabel limitów ani aktywacji; ta zmiana nie wymaga nowych migracji. Konto pokazowe i dane trzeba utworzyć w bazie Neon przez panel online — lokalna SQLite nie zasila wdrożenia. Nie skonfigurowano automatycznego resetowania demonstracyjnych wizyt.

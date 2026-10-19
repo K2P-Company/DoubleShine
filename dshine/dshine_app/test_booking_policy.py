@@ -51,7 +51,7 @@ class BookingPolicyTests(TestCase):
 
     def test_public_menu_and_calendar_have_no_signup_or_booking_links(self):
         response = self.client.get(reverse('home'))
-        self.assertNotContains(response, 'href="/login/"')
+        self.assertContains(response, 'href="/login/"')
         self.assertNotContains(response, 'href="/register/"')
         self.assertNotContains(response, 'href="/moje-rezerwacje/"')
         response = self.client.get(reverse('calendar'), {'month': self.slot.start.date().replace(day=1).isoformat()})
