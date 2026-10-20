@@ -4,5 +4,5 @@
 {% block branding %}<a class="ds-admin-brand" href="{% url 'admin:index' %}">DOUBLE <span>SHINE</span><small>PANEL ADMINISTRATORA</small></a>{% endblock %}
 {% block nav-global %}<a class="ds-calendar-link" href="{% url 'staff_bookings' %}">Zarządzanie wizytami ↗</a>{% endblock %}
 
-{% block extrahead %}{{ block.super }}<script>document.documentElement.dataset.theme = 'dark'; new MutationObserver(function(){if(document.documentElement.dataset.theme !== 'dark') document.documentElement.dataset.theme = 'dark';}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});</script>{% endblock %}
+{% block extrahead %}{{ block.super }}<link rel="icon" type="image/png" href="{% static 'assets/favicon-ds.png' %}"><script>document.documentElement.dataset.theme = 'dark'; new MutationObserver(function(){if(document.documentElement.dataset.theme !== 'dark') document.documentElement.dataset.theme = 'dark';}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});</script>{% endblock %}
 {% block userlinks %}{% if site_url %}<a href="{{ site_url }}">Strona</a> / {% endif %}<a href="{% url 'admin:password_change' %}">Zmień hasło</a> / <form id="logout-form" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit">Wyloguj</button></form>{% endblock %}
